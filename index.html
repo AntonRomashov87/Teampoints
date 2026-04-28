@@ -468,6 +468,76 @@ input[type=file] { display: none; }
 .sl-name { color: var(--ink2); font-weight: 600; }
 .sl-club { display: block; font-size: 0.63rem; color: var(--muted); margin-top: 2px; }
 
+/* ── TOPN SLIDER ─────────────────────────────── */
+.dz-slider-wrap {
+  margin: 18px 0 6px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 16px 20px 14px;
+  text-align: left;
+}
+.dz-slider-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dz-slider-label b {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.1rem;
+  color: var(--amber);
+  background: var(--amber-bg);
+  border: 1.5px solid var(--amber-bdr);
+  border-radius: 8px;
+  padding: 2px 12px;
+  min-width: 40px;
+  text-align: center;
+  display: inline-block;
+}
+.dz-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--amber2) 0%, var(--amber2) var(--pct,20%), var(--border2) var(--pct,20%));
+  outline: none;
+  cursor: pointer;
+}
+.dz-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold1), var(--gold2));
+  box-shadow: 0 2px 8px rgba(201,125,32,0.4);
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+.dz-slider::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold1), var(--gold2));
+  box-shadow: 0 2px 8px rgba(201,125,32,0.4);
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+.dz-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+.dz-slider-ticks span {
+  font-size: 0.6rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 /* medal icons */
 .medal::before { margin-right: 4px; }
 .m1::before { content: '🥇'; }
@@ -537,7 +607,18 @@ input[type=file] { display: none; }
       <span class="dz-pill pill-u08">U08</span>
       <span class="dz-pill pill-u10">U10</span>
     </div>
-    <p>Очки команди = <strong>топ-3 гравці</strong> з кожної підгрупи</p>
+    <div class="dz-slider-wrap" onclick="event.stopPropagation()">
+      <div class="dz-slider-label">
+        <span>Гравців у команді (зараховуються)</span>
+        <b id="topn-val">3</b>
+      </div>
+      <input class="dz-slider" id="topn-slider" type="range" min="2" max="10" value="3"
+        oninput="updateTopN(this.value)">
+      <div class="dz-slider-ticks">
+        <span>2</span><span>3</span><span>4</span><span>5</span><span>6</span>
+        <span>7</span><span>8</span><span>9</span><span>10</span>
+      </div>
+    </div>
     <button class="dz-btn" onclick="event.stopPropagation();document.getElementById('fi').click()">Вибрати файл</button>
     <input type="file" id="fi" accept=".xlsx,.xls">
   </div>
@@ -550,8 +631,23 @@ input[type=file] { display: none; }
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function abCls(g){ const m={U06:'u06',U08:'u08',U10:'u10',U12:'u10',U14:'u08'}; return 'ab-'+(m[String(g).toUpperCase()]||'def'); }
 
+// ── STATE ─────────────────────────────────────────────────────────
+let _d=null, _mg=[], _rc=0, _topN=3;
+
+function updateTopN(val){
+  _topN = parseInt(val);
+  document.getElementById('topn-val').textContent = _topN;
+  // Update slider gradient fill
+  const pct = ((_topN-2)/8*100).toFixed(1)+'%';
+  document.getElementById('topn-slider').style.setProperty('--pct', pct);
+  // Re-render if data already loaded
+  if(_d) render();
+}
+
 // ── FILE IO ──────────────────────────────────────────────────────
 document.getElementById('fi').addEventListener('change', e => { if(e.target.files[0]) load(e.target.files[0]); });
+// Init slider gradient
+updateTopN(3);
 function onDrop(e){ e.preventDefault(); document.getElementById('dz').classList.remove('over'); if(e.dataTransfer.files[0]) load(e.dataTransfer.files[0]); }
 function load(file){
   const r = new FileReader();
@@ -677,13 +773,10 @@ function calcGroup(players,c2t,ageGroup){
   for(const p of pool){ const tn=c2t[p.club]||p.club; if(!teams[tn]) teams[tn]=[]; teams[tn].push(p); }
   return Object.entries(teams).map(([name,members])=>{
     const sorted=[...members].sort((a,b)=>b.pts-a.pts);
-    const top3=sorted.slice(0,3);
-    return {name,members:sorted,top3,total:top3.reduce((s,p)=>s+p.pts,0)};
+    const topN=sorted.slice(0,_topN);
+    return {name,members:sorted,topN,total:topN.reduce((s,p)=>s+p.pts,0)};
   }).sort((a,b)=>b.total-a.total);
 }
-
-// ── STATE ─────────────────────────────────────────────────────────
-let _d=null,_mg=[],_rc=0;
 
 // ── RENDER ────────────────────────────────────────────────────────
 function render(){
@@ -755,7 +848,7 @@ function renderAge(ageGroup,c2t){
     <div class="age-sec">
       <div class="age-hdr">
         <span class="age-badge ${cls}">${ageGroup}</span>
-        <div class="age-stats"><b>${total}</b> гравців · <b>${multi.length}</b> команд · топ-<b>3</b></div>
+        <div class="age-stats"><b>${total}</b> гравців · <b>${multi.length}</b> команд · топ-<b>${_topN}</b></div>
       </div>
       ${!multi.length?`<p style="color:var(--muted);font-size:0.82rem;padding:8px 0">Немає команд з 2+ гравців у цій підгрупі</p>`:`
         <div class="tt-wrap">
@@ -881,7 +974,7 @@ async function exportToExcel(){
   // Sub-title
   sumSheet.mergeCells(2,1,2,2+_d.groups.length);
   const sumSubCell = sumSheet.getCell(2,1);
-  sumSubCell.value = 'Очки команди = сума топ-3 гравців у кожній підгрупі';
+  sumSubCell.value = `Очки команди = сума топ-${_topN} гравців у кожній підгрупі`;
   sumSubCell.font = {name:'Arial', size:9, color:{argb:CLR.muted}, italic:true};
   sumSubCell.alignment = {vertical:'middle', horizontal:'center'};
 
@@ -948,8 +1041,10 @@ async function exportToExcel(){
     const ws = wb.addWorksheet(ageGroup);
     ws.views = [{state:'frozen', ySplit:3}];
 
+    const totalCols = 3 + _topN + 1; // місце + назва + кількість + N гравців + сума
+
     // Title row
-    ws.mergeCells(1,1,1,7);
+    ws.mergeCells(1,1,1,totalCols);
     const titleCell = ws.getCell(1,1);
     titleCell.value = _d.tname + ' · ' + ageGroup;
     titleCell.font = {name:'Arial', bold:true, size:13, color:{argb:gColor}};
@@ -958,15 +1053,16 @@ async function exportToExcel(){
     ws.getRow(1).height = 28;
 
     // Sub-header
-    ws.mergeCells(2,1,2,7);
+    ws.mergeCells(2,1,2,totalCols);
     const subCell = ws.getCell(2,1);
-    subCell.value = `${multi.length} команд · топ-3 гравці зараховуються`;
+    subCell.value = `${multi.length} команд · топ-${_topN} гравці зараховуються`;
     subCell.font = {name:'Arial', size:9, color:{argb:CLR.muted}, italic:true};
     subCell.alignment = {vertical:'middle', horizontal:'center'};
 
     // Column headers
     const hdrs = ['Місце','Тренер / Команда','Гравців',
-                  '1-й гравець · очки','2-й гравець · очки','3-й гравець · очки','Сума'];
+      ...[...Array(_topN)].map((_,k)=>`${k+1}-й гравець · очки`),
+      'Сума'];
     hdrs.forEach((h,i)=>{
       const c = ws.getCell(3, i+1);
       c.value = h;
@@ -977,7 +1073,7 @@ async function exportToExcel(){
     let rowIdx = 4;
 
     if(!multi.length){
-      ws.mergeCells(rowIdx,1,rowIdx,7);
+      ws.mergeCells(rowIdx,1,rowIdx,totalCols);
       const emptyCell = ws.getCell(rowIdx,1);
       emptyCell.value = 'Немає команд з 2+ гравців у цій підгрупі';
       emptyCell.font = {name:'Arial', size:10, color:{argb:CLR.muted}, italic:true};
@@ -1004,11 +1100,11 @@ async function exportToExcel(){
       cntCell.value = t.members.length;
       styleData(cntCell, false, 10, CLR.muted, rowBg, 'center');
 
-      // Top 3 players
-      for(let k=0;k<3;k++){
+      // TopN players — dynamic columns
+      for(let k=0;k<_topN;k++){
         const c = ws.getCell(rowIdx, 4+k);
-        if(t.top3[k]){
-          c.value = `${t.top3[k].name}  ·  ${t.top3[k].pts}`;
+        if(t.topN[k]){
+          c.value = `${t.topN[k].name}  ·  ${t.topN[k].pts}`;
           styleData(c, k===0, 10, CLR.ink2, rowBg);
         } else {
           c.value = '—';
@@ -1016,7 +1112,7 @@ async function exportToExcel(){
         }
       }
 
-      const totCell = ws.getCell(rowIdx,7);
+      const totCell = ws.getCell(rowIdx, 4+_topN);
       totCell.value = t.total;
       styleData(totCell, true, 13, CLR.gold, rowBg, 'center');
 
@@ -1028,7 +1124,7 @@ async function exportToExcel(){
     if(single.length){
       rowIdx++; // blank row
 
-      ws.mergeCells(rowIdx,1,rowIdx,7);
+      ws.mergeCells(rowIdx,1,rowIdx,totalCols);
       const singHdr = ws.getCell(rowIdx,1);
       singHdr.value = `Одиночні гравці (${single.length})`;
       singHdr.font = {name:'Arial', bold:true, size:10, color:{argb:CLR.muted}};
@@ -1039,7 +1135,7 @@ async function exportToExcel(){
       rowIdx++;
 
       // Singles column headers
-      ['', 'Гравець', 'Клуб', 'Очки', '', '', ''].forEach((h,i)=>{
+      ['', 'Гравець', 'Клуб', 'Очки', ...[...Array(totalCols-4)].map(()=>'')].forEach((h,i)=>{
         const c = ws.getCell(rowIdx, i+1);
         c.value = h;
         c.font = {name:'Arial', bold:true, size:9, color:{argb:CLR.muted}};
@@ -1053,7 +1149,7 @@ async function exportToExcel(){
       single.forEach((t,si)=>{
         const p = t.members[0];
         const rowBg = si%2===0 ? 'FFFFFDF7' : CLR.singlesBg;
-        ['' , p.name, t.name, p.pts, '', '', ''].forEach((v,i)=>{
+        ['', p.name, t.name, p.pts, ...[...Array(totalCols-4)].map(()=>'')].forEach((v,i)=>{
           const c = ws.getCell(rowIdx, i+1);
           c.value = v;
           styleData(c, i===1, 9, i===3?CLR.gold:CLR.ink2, rowBg, i===3?'center':'left');
@@ -1067,10 +1163,8 @@ async function exportToExcel(){
     ws.getColumn(1).width = 10;
     ws.getColumn(2).width = 30;
     ws.getColumn(3).width = 10;
-    ws.getColumn(4).width = 28;
-    ws.getColumn(5).width = 28;
-    ws.getColumn(6).width = 28;
-    ws.getColumn(7).width = 10;
+    for(let k=0;k<_topN;k++) ws.getColumn(4+k).width = 28;
+    ws.getColumn(4+_topN).width = 10;
   }
 
   // ─── Download ─────────────────────────────────────────────────────
@@ -1091,16 +1185,16 @@ function renderRow(t,place){
   const medal=place===1?' m1':place===2?' m2':place===3?' m3':'';
 
   const ptsHtml=t.members.map((p,i)=>`
-    ${i===3?`<span class="pc-sep">·</span>`:''}
-    <span class="pc ${i<3?'pc-top':'pc-rest'}" title="${esc(p.name)}">${p.pts}</span>
+    ${i===_topN?`<span class="pc-sep">·</span>`:''}
+    <span class="pc ${i<_topN?'pc-top':'pc-rest'}" title="${esc(p.name)}">${p.pts}</span>
   `).join('');
 
   const detHtml=t.members.map((p,i)=>`
-    <div class="det-row ${i<3?'top3':'rest'}">
+    <div class="det-row ${i<_topN?'top3':'rest'}">
       <div class="di">
         <span class="di-rank">${i+1}.</span>
         <span>${esc(p.name)}</span>
-        ${i<3?`<span class="di-check">✓</span>`:''}
+        ${i<_topN?`<span class="di-check">✓</span>`:''}
       </div>
       <span class="di-pts">${p.pts} оч.</span>
     </div>`).join('');
