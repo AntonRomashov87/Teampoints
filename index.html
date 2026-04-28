@@ -62,6 +62,21 @@ body {
   align-items: center;
   gap: 16px;
 }
+.hdr-left { display: flex; align-items: center; gap: 16px; flex: 1; }
+.hdr-dev {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.hdr-dev strong {
+  display: block;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--amber);
+}
 .hdr-icon {
   font-size: 1.6rem;
   line-height: 1;
@@ -238,7 +253,23 @@ input[type=file] { display: none; }
   border-radius: 4px;
   padding: 2px 8px;
   color: var(--ink2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
+.tp-split {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: color .15s, background .15s;
+}
+.tp-split:hover { color: #c0392b; background: #fdecea; }
 .tp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tp-lbl { font-size: 0.72rem; color: var(--muted); }
 .tp-input {
@@ -474,10 +505,17 @@ input[type=file] { display: none; }
 <body>
 
 <div class="hdr">
-  <span class="hdr-icon">♟</span>
-  <div>
-    <h1>Командний залік</h1>
-    <p>Групування за тренером · Топ-3 з кожної вікової підгрупи</p>
+  <div class="hdr-left">
+    <span class="hdr-icon">♟</span>
+    <div>
+      <h1>Командний залік</h1>
+      <p>Групування за тренером · Топ-3 з кожної вікової підгрупи</p>
+    </div>
+  </div>
+  <div class="hdr-dev">
+    Розробник
+    <strong>Антон Ромашов</strong>
+    Суддя національної категорії
   </div>
 </div>
 
@@ -690,7 +728,13 @@ function renderPanel(mg){
               <span class="tp-surname">${esc(g.surname)}</span>
               <span class="tp-cnt">${g.variants.length} варіанти → 1 команда</span>
             </div>
-            <div class="tp-tags">${g.variants.map(v=>`<span class="tp-tag">${esc(v)}</span>`).join('')}</div>
+            <div class="tp-tags">${g.variants.map(v=>`
+              <span class="tp-tag">
+                ${esc(v)}
+                ${g.variants.length>1
+                  ? `<button class="tp-split" title="Відокремити в окрему команду" onclick="splitVariant(${idx},'${esc(v)}')">✕</button>`
+                  : ''}
+              </span>`).join('')}</div>
             <div class="tp-row">
               <span class="tp-lbl">Назва:</span>
               <input class="tp-input" value="${esc(g.displayName)}" oninput="_mg[${idx}].displayName=this.value">
@@ -739,6 +783,16 @@ function renderAge(ageGroup,c2t){
           </div>
         </div>`:''}
     </div>`;
+}
+
+// ── SPLIT VARIANT ────────────────────────────────────────────────
+function splitVariant(mgIdx, club){
+  const group = _mg[mgIdx];
+  // Remove club from this group
+  group.variants = group.variants.filter(v => v !== club);
+  // Add as a new standalone entry
+  _mg.push({ surname: club, displayName: club, variants: [club] });
+  render();
 }
 
 // ── EXPORT TO EXCEL ──────────────────────────────────────────────
