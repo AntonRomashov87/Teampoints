@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Командний залік — Шахи</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Mulish:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  --bg:       #faf7f2;
+  --bg2:      #f3ede3;
+  --card:     #ffffff;
+  --card2:    #fdf9f4;
+  --border:   #e8dfd0;
+  --border2:  #d6c9b5;
+
+  --ink:      #2a2118;
+  --ink2:     #5a4e40;
+  --muted:    #9c8e7e;
+
+  --amber:    #c97d20;
+  --amber2:   #e8960f;
+  --amber-bg: #fff5e6;
+  --amber-bdr:#f5d9a0;
+
+  --u06:      #2d7d46;
+  --u06-bg:   #edf7f0;
+  --u06-bdr:  #b3ddc0;
+
+  --u08:      #7b3fa0;
+  --u08-bg:   #f5eefa;
+  --u08-bdr:  #d4b3e8;
+
+  --u10:      #1a5fa8;
+  --u10-bg:   #eaf2fc;
+  --u10-bdr:  #aecde8;
+
+  --gold1: #c97d20;
+  --gold2: #e8a830;
+  --shadow: 0 2px 12px rgba(100,70,20,0.10);
+  --shadow2: 0 4px 24px rgba(100,70,20,0.13);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Mulish', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── HEADER ───────────────────────────────────── */
+.hdr {
+  background: var(--card);
+  border-bottom: 2px solid var(--border);
+  padding: 18px 36px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hdr-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.hdr h1 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--amber);
+  letter-spacing: -0.5px;
+}
+.hdr p {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* ── DROP ZONE ────────────────────────────────── */
+.drop-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 68px);
+  padding: 40px 20px;
+}
+.dz {
+  background: var(--card);
+  border: 2px dashed var(--border2);
+  border-radius: 20px;
+  padding: 56px 48px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+.dz:hover, .dz.over {
+  border-color: var(--amber2);
+  background: var(--amber-bg);
+  box-shadow: var(--shadow2);
+}
+.dz-icon { font-size: 3rem; margin-bottom: 18px; display: block; }
+.dz h2 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--amber);
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+.dz p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.dz strong { color: var(--ink2); }
+.dz-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0;
+  flex-wrap: wrap;
+}
+.dz-pill {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid;
+}
+.pill-u06 { background: var(--u06-bg); color: var(--u06); border-color: var(--u06-bdr); }
+.pill-u08 { background: var(--u08-bg); color: var(--u08); border-color: var(--u08-bdr); }
+.pill-u10 { background: var(--u10-bg); color: var(--u10); border-color: var(--u10-bdr); }
+.dz-btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 12px 36px;
+  background: linear-gradient(135deg, var(--gold1), var(--gold2));
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(201,125,32,0.35);
+  transition: all .2s;
+  letter-spacing: 0.3px;
+}
+.dz-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,125,32,0.45); }
+input[type=file] { display: none; }
+
+/* ── MAIN ─────────────────────────────────────── */
+.main { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
+
+.t-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.t-meta {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-bottom: 32px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.meta-chip {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink2);
+}
+
+/* ── TRAINER PANEL ────────────────────────────── */
+.trainer-panel {
+  background: var(--card);
+  border: 1.5px solid var(--amber-bdr);
+  border-left: 4px solid var(--amber);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 36px;
+  box-shadow: var(--shadow);
+}
+.trainer-panel > h3 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+.tp-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+.tp-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+.tp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.tp-surname {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-bdr);
+  padding: 3px 12px;
+  border-radius: 20px;
+}
+.tp-cnt { font-size: 0.7rem; color: var(--muted); }
+.tp-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.tp-tag {
+  font-size: 0.68rem;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: var(--ink2);
+}
+.tp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tp-lbl { font-size: 0.72rem; color: var(--muted); }
+.tp-input {
+  background: var(--card);
+  border: 1.5px solid var(--border2);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  min-width: 240px;
+  transition: border-color .15s;
+}
+.tp-input:focus { outline: none; border-color: var(--amber); }
+.refresh-btn {
+  margin-top: 16px;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, var(--gold1), var(--gold2));
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(201,125,32,0.3);
+  transition: all .2s;
+}
+.refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(201,125,32,0.4); }
+
+/* ── AGE SECTION ──────────────────────────────── */
+.age-sec { margin-bottom: 48px; }
+.age-hdr {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.age-badge {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  padding: 6px 20px;
+  border-radius: 50px;
+  border: 2px solid;
+}
+.ab-u06 { background: var(--u06-bg); color: var(--u06); border-color: var(--u06-bdr); }
+.ab-u08 { background: var(--u08-bg); color: var(--u08); border-color: var(--u08-bdr); }
+.ab-u10 { background: var(--u10-bg); color: var(--u10); border-color: var(--u10-bdr); }
+.ab-def { background: var(--bg2); color: var(--muted); border-color: var(--border2); }
+.age-stats { font-size: 0.74rem; color: var(--muted); }
+.age-stats b { color: var(--ink2); }
+
+/* ── TEAM TABLE ───────────────────────────────── */
+.tt-wrap {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.tt { width: 100%; border-collapse: collapse; }
+.tt thead tr { background: var(--bg2); border-bottom: 1.5px solid var(--border2); }
+.tt thead th {
+  text-align: left;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  padding: 12px 14px;
+  text-transform: uppercase;
+}
+.tt tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+.tt tbody tr.data:hover { background: var(--bg2); }
+.tt tbody tr:last-child { border-bottom: none; }
+.tt td { padding: 12px 14px; vertical-align: middle; }
+
+/* place */
+.place {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+  display: block;
+  width: 36px;
+}
+.pl-1 { color: var(--amber); }
+.pl-2 { color: #7a7a7a; }
+.pl-3 { color: #b06428; }
+.pl-n { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+
+/* team name */
+.tname { font-weight: 700; font-size: 0.9rem; color: var(--ink); }
+.tsub { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+/* points */
+.pts-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pc {
+  font-family: 'Mulish', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+.pc-top { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bdr); }
+.pc-rest { background: var(--bg2); color: var(--muted); font-weight: 400; border: 1px solid var(--border); }
+.pc-sep { color: var(--border2); font-size: 0.8rem; margin: 0 2px; }
+
+/* total */
+.total-pts {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--amber);
+}
+
+/* expand */
+.exp {
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Mulish', sans-serif;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.exp:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+
+/* detail */
+.det td { padding: 0 14px 14px 58px; }
+.det-inner {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.det-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  gap: 12px;
+}
+.det-row:last-child { border-bottom: none; }
+.det-row.top3 { color: var(--ink); background: var(--card); }
+.det-row.rest { color: var(--muted); }
+.di { display: flex; align-items: center; gap: 8px; }
+.di-rank { font-size: 0.65rem; color: var(--muted); min-width: 18px; font-weight: 700; }
+.di-check {
+  font-size: 0.65rem;
+  background: var(--u06-bg);
+  color: var(--u06);
+  border: 1px solid var(--u06-bdr);
+  border-radius: 10px;
+  padding: 0px 5px;
+  font-weight: 700;
+}
+.di-pts { font-weight: 700; font-size: 0.78rem; color: var(--amber); }
+.det-row.rest .di-pts { color: var(--muted); font-weight: 400; }
+
+/* singles */
+.singles {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.singles h4 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.66rem;
+  color: var(--muted);
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.sl-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.sl-chip {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.73rem;
+}
+.sl-pts { color: var(--amber); font-weight: 700; margin-right: 5px; }
+.sl-name { color: var(--ink2); font-weight: 600; }
+.sl-club { display: block; font-size: 0.63rem; color: var(--muted); margin-top: 2px; }
+
+/* medal icons */
+.medal::before { margin-right: 4px; }
+.m1::before { content: '🥇'; }
+.m2::before { content: '🥈'; }
+.m3::before { content: '🥉'; }
+
+/* ── EXPORT BUTTON ───────────────────────────── */
+.export-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  background: linear-gradient(135deg, #1e7e34, #28a745);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(30,126,52,0.35);
+  transition: all .2s;
+  letter-spacing: 0.3px;
+}
+.export-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,126,52,0.45); }
+.export-btn:active { transform: translateY(0); }
+.export-btn svg { flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-icon">♟</span>
+  <div>
+    <h1>Командний залік</h1>
+    <p>Групування за тренером · Топ-3 з кожної вікової підгрупи</p>
+  </div>
+</div>
+
+<div class="drop-wrap" id="drop-wrap">
+  <div class="dz" id="dz"
+    onclick="document.getElementById('fi').click()"
+    ondragover="event.preventDefault();this.classList.add('over')"
+    ondragleave="this.classList.remove('over')"
+    ondrop="onDrop(event)">
+    <span class="dz-icon">📊</span>
+    <h2>Перетягни<br>Excel файл</h2>
+    <p>
+      Формат chess-results.com<br>
+      Колонка <strong>«Клуб»</strong><br>
+      Команда = <strong>тренер</strong> (прізвище у назві клубу)
+    </p>
+    <div class="dz-pills">
+      <span class="dz-pill pill-u06">U06</span>
+      <span class="dz-pill pill-u08">U08</span>
+      <span class="dz-pill pill-u10">U10</span>
+    </div>
+    <p>Очки команди = <strong>топ-3 гравці</strong> з кожної підгрупи</p>
+    <button class="dz-btn" onclick="event.stopPropagation();document.getElementById('fi').click()">Вибрати файл</button>
+    <input type="file" id="fi" accept=".xlsx,.xls">
+  </div>
+</div>
+
+<div class="main" id="mc" style="display:none"></div>
+
+<script>
+// ── UTILS ────────────────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function abCls(g){ const m={U06:'u06',U08:'u08',U10:'u10',U12:'u10',U14:'u08'}; return 'ab-'+(m[String(g).toUpperCase()]||'def'); }
+
+// ── FILE IO ──────────────────────────────────────────────────────
+document.getElementById('fi').addEventListener('change', e => { if(e.target.files[0]) load(e.target.files[0]); });
+function onDrop(e){ e.preventDefault(); document.getElementById('dz').classList.remove('over'); if(e.dataTransfer.files[0]) load(e.dataTransfer.files[0]); }
+function load(file){
+  const r = new FileReader();
+  r.onload = e => { const wb = XLSX.read(e.target.result,{type:'array'}); const d = parse(wb); if(d){ _d=d; _mg=buildTrainerGroups(d.players); render(); } };
+  r.readAsArrayBuffer(file);
+}
+
+// ── PARSE ────────────────────────────────────────────────────────
+function parse(wb){
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+  // Find header row (contains "клуб")
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){
+    if(rows[i].some(c=>String(c).toLowerCase().includes('клуб'))){ hi=i; break; }
+  }
+  if(hi<0){ alert('Не знайдено колонку «Клуб»!'); return null; }
+
+  const H = rows[hi].map(c=>String(c).toLowerCase().trim());
+
+  // Find columns by header name
+  const cClub = H.findIndex(c=>c.includes('клуб')||c.includes('club')||c.includes('місто'));
+  const cPts  = H.findIndex(c=>c.includes('очки')||c.includes('очок')||c.includes('score'));
+  const cName = H.findIndex(c=>c.includes("ім'я")||c.includes('имя')||c.includes('name')||c.includes('ім'));
+
+  // Type/age column: header or detect by value pattern U6/U8/U10
+  let cType = H.findIndex(c=>c==='тип'||c.includes('type')||c==='cat');
+  if(cType<0){
+    outer: for(let col=0;col<H.length;col++){
+      for(let r=hi+1;r<Math.min(hi+10,rows.length);r++){
+        if(/^U\d{1,2}$/i.test(String(rows[r][col]||'').trim())){ cType=col; break outer; }
+      }
+    }
+  }
+
+  const tname = String(rows[1]?.[0]||'').trim();
+  const players = [];
+  for(let i=hi+1;i<rows.length;i++){
+    const row=rows[i];
+    // First non-empty cell that is a number = start number
+    const num=parseInt(row[0]); if(!num||isNaN(num)) continue;
+    const name=String(row[cName]||'').trim(); if(!name) continue;
+    const club=String(row[cClub]||'').trim()||'—';
+    const pts=parseFloat(String(row[cPts]||'0').replace(',','.'))||0;
+    // Normalize group: U8→U08, U6→U06
+    let group = cType>=0 ? String(row[cType]||'').trim().toUpperCase() : '';
+    group = group.replace(/^U(\d)$/, 'U0$1'); // U8→U08, U6→U06
+    players.push({num,name,club,pts,group});
+  }
+  const groups=[...new Set(players.map(p=>p.group).filter(g=>/^U\d+$/i.test(g)))]
+    .sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+  return {tname,players,groups};
+}
+
+// ── TRAINER EXTRACTION ───────────────────────────────────────────
+// Підтримує два формати:
+//   Новий: "Прізвище І. Клуб"  → тренер на початку
+//   Старий: "Клуб Прізвище І." → тренер в кінці
+
+function extractTrainer(club){
+  // Формат 1 (новий): починається з "Прізвище І." або "Прізвище І.О."
+  let m = club.match(/^([А-ЯІЇЄҐ][а-яіїєґ']{2,})\s+[А-ЯІЇЄҐ][а-яіїєґ]?\./);
+  if(m) return m[1];
+
+  // Формат 1b: починається просто з великого кириличного слова (без ініціалу)
+  m = club.match(/^([А-ЯІЇЄҐ][а-яіїєґ']{3,})\b/);
+  if(m){
+    const w = m[1];
+    const wl = w.toLowerCase();
+    if(!SKIP_WORDS.has(wl) && !FIRST_NAMES.has(wl)) return w;
+  }
+
+  // Формат 2 (старий): тренер в кінці після назви клубу — шукаємо "Прізвище І."
+  const tokens = club.replace(/[«»""''`.,\/#№\[\]()]/g,' ').split(/\s+/).map(t=>t.trim()).filter(Boolean);
+  const cands = [];
+  for(let i=0;i<tokens.length;i++){
+    const w=tokens[i]; if(!/^[А-ЯІЇЄҐ]/.test(w)||w.length<4) continue;
+    const wl=w.toLowerCase(); if(SKIP_WORDS.has(wl)||FIRST_NAMES.has(wl)) continue;
+    if(w===w.toUpperCase()&&w.length<=4) continue;
+    const next=tokens[i+1]||'';
+    const hasInit=/^[А-ЯІЇЄҐ]\.$/.test(next)||/^[А-ЯІЇЄҐ]\.[А-ЯІЇЄҐ]/.test(next);
+    cands.push({w,hasInit});
+  }
+  if(!cands.length) return null;
+  const wi=cands.filter(c=>c.hasInit);
+  return wi.length ? wi[wi.length-1].w : cands[cands.length-1].w;
+}
+
+const FIRST_NAMES = new Set(['олег','микола','геннадій','ігор','андрій','сергій','василь','іван','петро',
+  'богдан','роман','юрій','максим','дмитро','олексій','ярослав','степан','ганна','олена','наталія',
+  'марія','ірина','тетяна','людмила','надія','любов','оксана','галина','валентина','вікторія','леся',
+  'лариса','михайло','віктор','леонід','федір','григорій','євген','кирило','святослав','тарас',
+  'данило','павло','антон','артем','владислав','назар','владимир']);
+const SKIP_WORDS = new Set(['львів','стрий','городок','жовква','моршин','соснівка','пустомити','стебник',
+  'судова','миколаїв','дебют','тризуб','лідер','малюк','солонка','шептицький','наварійський',
+  'барвінок','академія','ліцей','школа','дюсш','бдют','дюо','кзо','нвк','сзш','ззсо','зош',
+  'мшк','лша','глобал','global','kids','фірма','центр','секція','гурток','сестер','спорт',
+  'самбір','комарно','великомостівський','цдют','кзцпо']);
+
+function buildTrainerGroups(players){
+  const clubs=[...new Set(players.map(p=>p.club).filter(c=>c!=='—'))];
+  const trainerMap={};
+  for(const club of clubs){
+    const s=extractTrainer(club); if(!s) continue;
+    const key=s.toLowerCase();
+    if(!trainerMap[key]) trainerMap[key]={surname:s,displayName:s,variants:[]};
+    trainerMap[key].variants.push(club);
+  }
+  return Object.values(trainerMap).sort((a,b)=>b.variants.length-a.variants.length);
+}
+
+function buildC2T(mg){
+  const m={};
+  for(const g of mg) for(const c of g.variants) m[c]=g.displayName;
+  return m;
+}
+
+// ── CALC ─────────────────────────────────────────────────────────
+function calcGroup(players,c2t,ageGroup){
+  const pool=players.filter(p=>p.group===ageGroup);
+  const teams={};
+  for(const p of pool){ const tn=c2t[p.club]||p.club; if(!teams[tn]) teams[tn]=[]; teams[tn].push(p); }
+  return Object.entries(teams).map(([name,members])=>{
+    const sorted=[...members].sort((a,b)=>b.pts-a.pts);
+    const top3=sorted.slice(0,3);
+    return {name,members:sorted,top3,total:top3.reduce((s,p)=>s+p.pts,0)};
+  }).sort((a,b)=>b.total-a.total);
+}
+
+// ── STATE ─────────────────────────────────────────────────────────
+let _d=null,_mg=[],_rc=0;
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render(){
+  document.getElementById('drop-wrap').style.display='none';
+  document.getElementById('mc').style.display='';
+  const c2t=buildC2T(_mg); _rc=0;
+  const multiMg=_mg.filter(g=>g.variants.length>=2);
+  const totalTeams=new Set();
+  for(const g of _d.groups) calcGroup(_d.players,c2t,g).filter(t=>t.members.length>=2).forEach(t=>totalTeams.add(t.name));
+
+  document.getElementById('mc').innerHTML=`
+    <div class="t-title">${esc(_d.tname)}</div>
+    <div class="t-meta">
+      <span>${_d.players.length} гравців</span>
+      <span>${totalTeams.size} команд</span>
+      ${_d.groups.map(g=>`<span class="meta-chip">${g}: ${_d.players.filter(p=>p.group===g).length} ос.</span>`).join('')}
+    </div>
+    <div class="export-bar">
+      <button class="export-btn" onclick="exportToExcel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Експорт в Excel
+      </button>
+    </div>
+    ${renderPanel(multiMg)}
+    ${_d.groups.map(g=>renderAge(g,c2t)).join('')}
+  `;
+}
+
+function renderPanel(mg){
+  if(!mg.length) return '';
+  return `
+    <div class="trainer-panel">
+      <h3>⚙ Автоматично об'єднані варіанти клубів</h3>
+      <p class="tp-hint">Однакові прізвища тренерів у різних записах об'єднані в одну команду.<br>Перевір і відредагуй назву якщо потрібно.</p>
+      ${mg.map((g,i)=>{
+        const idx=_mg.indexOf(g);
+        return `
+          <div class="tp-item">
+            <div class="tp-head">
+              <span class="tp-surname">${esc(g.surname)}</span>
+              <span class="tp-cnt">${g.variants.length} варіанти → 1 команда</span>
+            </div>
+            <div class="tp-tags">${g.variants.map(v=>`<span class="tp-tag">${esc(v)}</span>`).join('')}</div>
+            <div class="tp-row">
+              <span class="tp-lbl">Назва:</span>
+              <input class="tp-input" value="${esc(g.displayName)}" oninput="_mg[${idx}].displayName=this.value">
+            </div>
+          </div>`;
+      }).join('')}
+      <button class="refresh-btn" onclick="render()">↻ Оновити таблиці</button>
+    </div>`;
+}
+
+function renderAge(ageGroup,c2t){
+  const teams=calcGroup(_d.players,c2t,ageGroup);
+  const multi=teams.filter(t=>t.members.length>=2);
+  const single=teams.filter(t=>t.members.length===1);
+  const total=_d.players.filter(p=>p.group===ageGroup).length;
+  const cls=abCls(ageGroup);
+  return `
+    <div class="age-sec">
+      <div class="age-hdr">
+        <span class="age-badge ${cls}">${ageGroup}</span>
+        <div class="age-stats"><b>${total}</b> гравців · <b>${multi.length}</b> команд · топ-<b>3</b></div>
+      </div>
+      ${!multi.length?`<p style="color:var(--muted);font-size:0.82rem;padding:8px 0">Немає команд з 2+ гравців у цій підгрупі</p>`:`
+        <div class="tt-wrap">
+          <table class="tt">
+            <thead><tr>
+              <th style="width:48px;text-align:center">Місце</th>
+              <th>Тренер / Команда</th>
+              <th>Гравців</th>
+              <th>Очки (зараховані · решта)</th>
+              <th>Сума</th>
+              <th></th>
+            </tr></thead>
+            <tbody>${multi.map((t,i)=>renderRow(t,i+1)).join('')}</tbody>
+          </table>
+        </div>`}
+      ${single.length?`
+        <div class="singles">
+          <h4>Одиночні гравці (${single.length})</h4>
+          <div class="sl-list">${single.map(t=>`
+            <div class="sl-chip">
+              <span class="sl-pts">${t.members[0].pts} оч.</span>
+              <span class="sl-name">${esc(t.members[0].name)}</span>
+              <span class="sl-club">${esc(t.name)}</span>
+            </div>`).join('')}
+          </div>
+        </div>`:''}
+    </div>`;
+}
+
+// ── EXPORT TO EXCEL ──────────────────────────────────────────────
+async function exportToExcel(){
+  const c2t = buildC2T(_mg);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Командний залік';
+  wb.created = new Date();
+
+  // ─── Color palette ───────────────────────────────────────────────
+  const CLR = {
+    headerBg:  'FFC97D20', // amber
+    headerFg:  'FFFFFFFF',
+    subHdrBg:  'FFFFF5E6', // light amber
+    subHdrFg:  'FFC97D20',
+    top3Bg:    'FFFFFDF7',
+    restBg:    'FFFFFFFF',
+    singlesBg: 'FFF3EDE3',
+    border:    'FFD6C9B5',
+    muted:     'FF9C8E7E',
+    gold:      'FFC97D20',
+    silver:    'FF7A7A7A',
+    bronze:    'FFB06428',
+    u06:       'FF2D7D46',
+    u06bg:     'FFEDF7F0',
+    u08:       'FF7B3FA0',
+    u08bg:     'FFF5EEFA',
+    u10:       'FF1A5FA8',
+    u10bg:     'FFEAF2FC',
+    defbg:     'FFF3EDE3',
+    title:     'FF2A2118',
+    ink2:      'FF5A4E40',
+  };
+
+  function groupColor(g){
+    const m = {U06:CLR.u06,U08:CLR.u08,U10:CLR.u10,U12:CLR.u10,U14:CLR.u08};
+    return m[String(g).toUpperCase()] || CLR.muted;
+  }
+  function groupBg(g){
+    const m = {U06:CLR.u06bg,U08:CLR.u08bg,U10:CLR.u10bg,U12:CLR.u10bg,U14:CLR.u08bg};
+    return m[String(g).toUpperCase()] || CLR.defbg;
+  }
+
+  function applyBorder(cell, color){
+    const s = {style:'thin', color:{argb: color||CLR.border}};
+    cell.border = {top:s,left:s,bottom:s,right:s};
+  }
+  function styleHeader(cell, bgArgb, fgArgb, sz){
+    cell.font = {name:'Arial', bold:true, size:sz||10, color:{argb:fgArgb||CLR.headerFg}};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:bgArgb}};
+    cell.alignment = {vertical:'middle', horizontal:'center', wrapText:true};
+    applyBorder(cell);
+  }
+  function styleData(cell, bold, sz, color, bg, halign){
+    cell.font = {name:'Arial', bold:!!bold, size:sz||10, color:{argb:color||CLR.title}};
+    if(bg) cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:bg}};
+    cell.alignment = {vertical:'middle', horizontal:halign||'left', wrapText:false};
+    applyBorder(cell);
+  }
+
+  // ─── Summary sheet ────────────────────────────────────────────────
+  const sumSheet = wb.addWorksheet('Загальний підсумок');
+  sumSheet.views = [{state:'frozen', ySplit:3}];
+
+  // Build summary data: map team → {[group]: total}
+  const allTeams = {};
+  for(const g of _d.groups){
+    const teams = calcGroup(_d.players, c2t, g).filter(t=>t.members.length>=2);
+    for(const t of teams){
+      if(!allTeams[t.name]) allTeams[t.name] = {name:t.name, groups:{}, grandTotal:0};
+      allTeams[t.name].groups[g] = t.total;
+      allTeams[t.name].grandTotal += t.total;
+    }
+  }
+  const sortedTeams = Object.values(allTeams).sort((a,b)=>b.grandTotal-a.grandTotal);
+
+  // Title row
+  sumSheet.mergeCells(1,1,1,2+_d.groups.length);
+  const sumTitleCell = sumSheet.getCell(1,1);
+  sumTitleCell.value = _d.tname + ' — Загальний підсумок';
+  sumTitleCell.font = {name:'Arial', bold:true, size:14, color:{argb:CLR.gold}};
+  sumTitleCell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF5E6'}};
+  sumTitleCell.alignment = {vertical:'middle', horizontal:'center'};
+  sumSheet.getRow(1).height = 30;
+
+  // Sub-title
+  sumSheet.mergeCells(2,1,2,2+_d.groups.length);
+  const sumSubCell = sumSheet.getCell(2,1);
+  sumSubCell.value = 'Очки команди = сума топ-3 гравців у кожній підгрупі';
+  sumSubCell.font = {name:'Arial', size:9, color:{argb:CLR.muted}, italic:true};
+  sumSubCell.alignment = {vertical:'middle', horizontal:'center'};
+
+  // Headers row
+  const sumHdrRow = sumSheet.getRow(3);
+  sumSheet.getCell(3,1).value = 'Місце';
+  styleHeader(sumSheet.getCell(3,1), CLR.headerBg, CLR.headerFg, 10);
+  sumSheet.getCell(3,2).value = 'Тренер / Команда';
+  styleHeader(sumSheet.getCell(3,2), CLR.headerBg, CLR.headerFg, 10);
+  _d.groups.forEach((g,i)=>{
+    const c = sumSheet.getCell(3, 3+i);
+    c.value = g;
+    styleHeader(c, groupBg(g), groupColor(g), 10);
+  });
+  const totalHdrCell = sumSheet.getCell(3, 3+_d.groups.length);
+  totalHdrCell.value = 'РАЗОМ';
+  styleHeader(totalHdrCell, CLR.headerBg, CLR.headerFg, 10);
+  sumHdrRow.height = 22;
+
+  // Data rows
+  sortedTeams.forEach((t,i)=>{
+    const row = i+4;
+    const placeVal = i+1;
+    const rowBg = i<3 ? 'FFFFFDF7' : 'FFFFFFFF';
+
+    const placeCell = sumSheet.getCell(row,1);
+    const medal = placeVal===1?'🥇 ':placeVal===2?'🥈 ':placeVal===3?'🥉 ':'';
+    placeCell.value = medal+(placeVal);
+    styleData(placeCell, true, 11,
+      placeVal===1?CLR.gold:placeVal===2?CLR.silver:placeVal===3?CLR.bronze:CLR.muted,
+      rowBg, 'center');
+
+    const nameCell = sumSheet.getCell(row,2);
+    nameCell.value = t.name;
+    styleData(nameCell, true, 10, CLR.title, rowBg);
+
+    _d.groups.forEach((g,gi)=>{
+      const c = sumSheet.getCell(row, 3+gi);
+      c.value = t.groups[g] ?? '';
+      styleData(c, false, 10, t.groups[g]?CLR.ink2:CLR.muted, rowBg, 'center');
+    });
+
+    const totCell = sumSheet.getCell(row, 3+_d.groups.length);
+    totCell.value = t.grandTotal;
+    styleData(totCell, true, 12, CLR.gold, rowBg, 'center');
+
+    sumSheet.getRow(row).height = 20;
+  });
+
+  // Column widths for summary
+  sumSheet.getColumn(1).width = 10;
+  sumSheet.getColumn(2).width = 32;
+  _d.groups.forEach((_,i)=>{ sumSheet.getColumn(3+i).width = 10; });
+  sumSheet.getColumn(3+_d.groups.length).width = 12;
+
+  // ─── Per-age-group sheets ─────────────────────────────────────────
+  for(const ageGroup of _d.groups){
+    const teams = calcGroup(_d.players, c2t, ageGroup);
+    const multi = teams.filter(t=>t.members.length>=2);
+    const single = teams.filter(t=>t.members.length===1);
+    const gColor = groupColor(ageGroup);
+    const gBg    = groupBg(ageGroup);
+
+    const ws = wb.addWorksheet(ageGroup);
+    ws.views = [{state:'frozen', ySplit:3}];
+
+    // Title row
+    ws.mergeCells(1,1,1,7);
+    const titleCell = ws.getCell(1,1);
+    titleCell.value = _d.tname + ' · ' + ageGroup;
+    titleCell.font = {name:'Arial', bold:true, size:13, color:{argb:gColor}};
+    titleCell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:gBg}};
+    titleCell.alignment = {vertical:'middle', horizontal:'center'};
+    ws.getRow(1).height = 28;
+
+    // Sub-header
+    ws.mergeCells(2,1,2,7);
+    const subCell = ws.getCell(2,1);
+    subCell.value = `${multi.length} команд · топ-3 гравці зараховуються`;
+    subCell.font = {name:'Arial', size:9, color:{argb:CLR.muted}, italic:true};
+    subCell.alignment = {vertical:'middle', horizontal:'center'};
+
+    // Column headers
+    const hdrs = ['Місце','Тренер / Команда','Гравців',
+                  '1-й гравець · очки','2-й гравець · очки','3-й гравець · очки','Сума'];
+    hdrs.forEach((h,i)=>{
+      const c = ws.getCell(3, i+1);
+      c.value = h;
+      styleHeader(c, gBg, gColor, 9);
+    });
+    ws.getRow(3).height = 22;
+
+    let rowIdx = 4;
+
+    if(!multi.length){
+      ws.mergeCells(rowIdx,1,rowIdx,7);
+      const emptyCell = ws.getCell(rowIdx,1);
+      emptyCell.value = 'Немає команд з 2+ гравців у цій підгрупі';
+      emptyCell.font = {name:'Arial', size:10, color:{argb:CLR.muted}, italic:true};
+      emptyCell.alignment = {horizontal:'center', vertical:'middle'};
+      rowIdx++;
+    }
+
+    multi.forEach((t,i)=>{
+      const place = i+1;
+      const medal = place===1?'🥇 ':place===2?'🥈 ':place===3?'🥉 ':'';
+      const rowBg = i%2===0 ? 'FFFFFDF7' : 'FFFEFDFB';
+
+      const placeCell = ws.getCell(rowIdx,1);
+      placeCell.value = medal+(place);
+      styleData(placeCell, true, 11,
+        place===1?CLR.gold:place===2?CLR.silver:place===3?CLR.bronze:CLR.muted,
+        rowBg, 'center');
+
+      const nameCell = ws.getCell(rowIdx,2);
+      nameCell.value = t.name;
+      styleData(nameCell, true, 10, CLR.title, rowBg);
+
+      const cntCell = ws.getCell(rowIdx,3);
+      cntCell.value = t.members.length;
+      styleData(cntCell, false, 10, CLR.muted, rowBg, 'center');
+
+      // Top 3 players
+      for(let k=0;k<3;k++){
+        const c = ws.getCell(rowIdx, 4+k);
+        if(t.top3[k]){
+          c.value = `${t.top3[k].name}  ·  ${t.top3[k].pts}`;
+          styleData(c, k===0, 10, CLR.ink2, rowBg);
+        } else {
+          c.value = '—';
+          styleData(c, false, 10, CLR.muted, rowBg, 'center');
+        }
+      }
+
+      const totCell = ws.getCell(rowIdx,7);
+      totCell.value = t.total;
+      styleData(totCell, true, 13, CLR.gold, rowBg, 'center');
+
+      ws.getRow(rowIdx).height = 22;
+      rowIdx++;
+    });
+
+    // Singles section
+    if(single.length){
+      rowIdx++; // blank row
+
+      ws.mergeCells(rowIdx,1,rowIdx,7);
+      const singHdr = ws.getCell(rowIdx,1);
+      singHdr.value = `Одиночні гравці (${single.length})`;
+      singHdr.font = {name:'Arial', bold:true, size:10, color:{argb:CLR.muted}};
+      singHdr.fill = {type:'pattern', pattern:'solid', fgColor:{argb:CLR.singlesBg}};
+      singHdr.alignment = {horizontal:'center', vertical:'middle'};
+      applyBorder(singHdr, CLR.border);
+      ws.getRow(rowIdx).height = 20;
+      rowIdx++;
+
+      // Singles column headers
+      ['', 'Гравець', 'Клуб', 'Очки', '', '', ''].forEach((h,i)=>{
+        const c = ws.getCell(rowIdx, i+1);
+        c.value = h;
+        c.font = {name:'Arial', bold:true, size:9, color:{argb:CLR.muted}};
+        c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:CLR.singlesBg}};
+        c.alignment = {horizontal:'center', vertical:'middle'};
+        applyBorder(c, CLR.border);
+      });
+      ws.getRow(rowIdx).height = 18;
+      rowIdx++;
+
+      single.forEach((t,si)=>{
+        const p = t.members[0];
+        const rowBg = si%2===0 ? 'FFFFFDF7' : CLR.singlesBg;
+        ['' , p.name, t.name, p.pts, '', '', ''].forEach((v,i)=>{
+          const c = ws.getCell(rowIdx, i+1);
+          c.value = v;
+          styleData(c, i===1, 9, i===3?CLR.gold:CLR.ink2, rowBg, i===3?'center':'left');
+        });
+        ws.getRow(rowIdx).height = 18;
+        rowIdx++;
+      });
+    }
+
+    // Column widths
+    ws.getColumn(1).width = 10;
+    ws.getColumn(2).width = 30;
+    ws.getColumn(3).width = 10;
+    ws.getColumn(4).width = 28;
+    ws.getColumn(5).width = 28;
+    ws.getColumn(6).width = 28;
+    ws.getColumn(7).width = 10;
+  }
+
+  // ─── Download ─────────────────────────────────────────────────────
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (_d.tname||'командний-залік').replace(/[^\wа-яіїєґА-ЯІЇЄҐ\s-]/g,'').trim().replace(/\s+/g,'-');
+  a.download = safeName + '-командний-залік.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderRow(t,place){
+  const id='dr'+(++_rc);
+  const pc=place<=3?`pl-${place}`:'pl-n';
+  const medal=place===1?' m1':place===2?' m2':place===3?' m3':'';
+
+  const ptsHtml=t.members.map((p,i)=>`
+    ${i===3?`<span class="pc-sep">·</span>`:''}
+    <span class="pc ${i<3?'pc-top':'pc-rest'}" title="${esc(p.name)}">${p.pts}</span>
+  `).join('');
+
+  const detHtml=t.members.map((p,i)=>`
+    <div class="det-row ${i<3?'top3':'rest'}">
+      <div class="di">
+        <span class="di-rank">${i+1}.</span>
+        <span>${esc(p.name)}</span>
+        ${i<3?`<span class="di-check">✓</span>`:''}
+      </div>
+      <span class="di-pts">${p.pts} оч.</span>
+    </div>`).join('');
+
+  return `
+    <tr class="data">
+      <td style="text-align:center"><span class="place ${pc}${medal}">${place}</span></td>
+      <td>
+        <div class="tname">${esc(t.name)}</div>
+        <div class="tsub">${t.members.length} гравців</div>
+      </td>
+      <td style="font-size:0.8rem;color:var(--muted);font-weight:700">${t.members.length}</td>
+      <td><div class="pts-row">${ptsHtml}</div></td>
+      <td><span class="total-pts">${t.total}</span></td>
+      <td><button class="exp" onclick="
+        var el=document.getElementById('${id}');
+        el.style.display=el.style.display===''?'none':'';
+        this.textContent=el.style.display===''?'згорнути':'деталі';
+      ">деталі</button></td>
+    </tr>
+    <tr class="det" id="${id}" style="display:none">
+      <td colspan="6"><div class="det-inner">${detHtml}</div></td>
+    </tr>`;
+}
+</script>
+</body>
+</html>
